@@ -1,5 +1,7 @@
 <?hh // strict
 
+use namespace \HH\Lib\Str;
+
 namespace Protobuf {
   use type \Errors\Error;
   use function \Errors\Ok;
@@ -311,14 +313,56 @@ namespace Protobuf\Internal {
 
   class Encoder {
     private string $buf;
+    private int $pos;
+
     public function __construct() {
-      $this->buf = "";
+      // TODO: Magic constants.
+      $this->buf = Str\repeat(\chr(0), 1000);
+      $this->pos = 0;
+    }
+
+    // TODO: Better amortization?
+    private function growBufIfNeeded(int $growth): void {
+      if (\strlen($this->buf) - $this->pos < $growth) {
+        $this->buf .= Str\repeat(\chr(0), $growth + 1000);
+      }
+    }
+
+    private function writeInt32(int $i): void {
+      $this->growBufIfNeeded(1);
+      \HH\set_bytes_int32($this->buf, $this->pos, $i);
+      $this->pos += 1;
+    }
+
+    private function writeInt64(int $i): void {
+      $this->growBufIfNeeded(8);
+      \HH\set_bytes_int64($this->buf, $this->pos, $i);
+      $this->pos += 8;
+    }
+
+    private function writeFloat32(float $f): void {
+      $this->growBufIfNeeded(4);
+      \HH\set_bytes_float32($this->buf, $this->pos, $f);
+      $this->pos += 4;
+    }
+
+    private function writeFloat64(float $f): void {
+      $this->growBufIfNeeded(8);
+      \HH\set_bytes_float64($this->buf, $this->pos, $f);
+      $this->pos += 8;
+    }
+
+    private function writeByteString(string $s): void {
+      $length = \strlen($s);
+      $this->growBufIfNeeded($length);
+      \HH\set_bytes_string($this->buf, $this->pos, $s, $length);
+      $this->pos += $length;
     }
 
     public function writeVarint(int $i): void {
       if ($i < 0) {
-        // Special case: The sign bit is preserved while right shifiting.
-        $this->buf .= \chr(($i & 0x7F) | 0x80);
+        // Special case: The sign bit is preserved while right shifting.
+        $this->writeInt32(($i & 0x7F) | 0x80);
         // Now shift and move sign bit.
         $i = (($i & 0x7FFFFFFFFFFFFFFF) >> 7) | 0x100000000000000;
       }
@@ -326,10 +370,10 @@ namespace Protobuf\Internal {
         $b = $i & 0x7F; // lower 7 bits
         $i = $i >> 7;
         if ($i == 0) {
-          $this->buf .= \chr($b);
+          $this->writeInt32($b);
           return;
         }
-        $this->buf .= \chr($b | 0x80); // set the top bit.
+        $this->writeInt32(($b | 0x80)); // set the top bit.
       }
     }
 
@@ -338,36 +382,40 @@ namespace Protobuf\Internal {
     }
 
     public function writeLittleEndianInt32Signed(int $i): void {
-      $this->buf .= \pack('l', $i);
+      $this->writeByteString(\pack('l', $i));
     }
 
     public function writeLittleEndianInt32Unsigned(int $i): void {
-      $this->buf .= \pack('L', $i);
+      $this->writeByteString(\pack('L', $i));
     }
 
     public function writeLittleEndianInt64(int $i): void {
-      $this->buf .= \pack('q', $i);
+      $this->writeByteString(\pack('q', $i));
     }
 
     public function writeBool(bool $b): void {
-      $this->buf .= $b ? \chr(0x01) : \chr(0x00);
+      if ($b) {
+        $this->writeInt32(1);
+      } else {
+        $this->writeInt32(0);
+      }
     }
 
     public function writeFloat(float $f): void {
-      $this->buf .= \pack('f', $f);
+      $this->writeByteString(\pack('f', $f));
     }
 
     public function writeDouble(float $d): void {
-      $this->buf .= \pack('d', $d);
+      $this->writeByteString(\pack('d', $d));
     }
 
     public function writeRaw(string $s): void {
-      $this->buf .= $s;
+      $this->writeByteString($s);
     }
 
     public function writeString(string $s): void {
       $this->writeVarint(\strlen($s));
-      $this->buf .= $s;
+      $this->writeByteString($s);
     }
 
     public function writeVarintZigZag32(int $i): void {
@@ -390,6 +438,10 @@ namespace Protobuf\Internal {
     }
 
     public function buffer(): string {
+      if (\strlen($this->buf) > $this->pos) {
+        //echo "Slicing away at {$this->pos}";
+        $this->buf = Str\slice($this->buf, 0, $this->pos);
+      }
       return $this->buf;
     }
   }
