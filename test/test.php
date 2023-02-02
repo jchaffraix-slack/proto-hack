@@ -29,6 +29,7 @@ function main(): void {
   check(Protobuf\Unmarshal($raw, $got));
   testExample1($got, "test example1: file");
 
+  echo "Starting with Marshal!!!\n\n";
   $remarsh = Protobuf\Marshal($got);
   araw($remarsh, $raw, "hack marshal does not match protoc marshal");
   $got = new foo\bar\example1();

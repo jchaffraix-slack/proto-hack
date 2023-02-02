@@ -325,31 +325,30 @@ namespace Protobuf\Internal {
     private function growBufIfNeeded(int $growth): void {
       if (\strlen($this->buf) - $this->pos < $growth) {
         $this->buf .= Str\repeat(\chr(0), $growth + 1000);
+        $len = \strlen($this->buf);
+        //echo "Growing buffer to {$len}\n";
       }
     }
 
-    private function writeInt32(int $i): void {
+    private function writeInt8(int $i): void {
       $this->growBufIfNeeded(1);
-      \HH\set_bytes_int32($this->buf, $this->pos, $i);
+      \HH\set_bytes_int8($this->buf, $this->pos, $i);
       $this->pos += 1;
-    }
-
-    private function writeInt64(int $i): void {
-      $this->growBufIfNeeded(8);
-      \HH\set_bytes_int64($this->buf, $this->pos, $i);
-      $this->pos += 8;
+      //echo "Called writeInt32 with {$i} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
     }
 
     private function writeFloat32(float $f): void {
       $this->growBufIfNeeded(4);
       \HH\set_bytes_float32($this->buf, $this->pos, $f);
       $this->pos += 4;
+      //echo "Called writeFloat32 with {$f} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
     }
 
     private function writeFloat64(float $f): void {
       $this->growBufIfNeeded(8);
       \HH\set_bytes_float64($this->buf, $this->pos, $f);
       $this->pos += 8;
+      //echo "Called writeFloat64 with {$f} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
     }
 
     private function writeByteString(string $s): void {
@@ -357,6 +356,7 @@ namespace Protobuf\Internal {
       $this->growBufIfNeeded($length);
       \HH\set_bytes_string($this->buf, $this->pos, $s, $length);
       $this->pos += $length;
+      //echo "Called writeByteString with " . dumpByteString($s) ." (new pos: {$this->pos}, buf = " . dumpByteString($this->buf, $this->pos) . ")\n";
     }
 
     public function writeVarint(int $i): void {
@@ -434,7 +434,7 @@ namespace Protobuf\Internal {
     }
 
     public function isEmpty(): bool {
-      return \strlen($this->buf) == 0;
+      return $this->pos === 0;
     }
 
     public function buffer(): string {
@@ -1099,6 +1099,25 @@ namespace Protobuf\Internal {
       );
     }
   }
+function dumpByteString(string $s, int $len = -1) {
+  if ($len === -1) {
+    $len = \strlen($s);
+  }
+
+  if ($len === 0) {
+    return "<empty>";
+  }
+  $out = "";
+  for ($i = 0; $i < $len; $i++) {
+    if ($i != 0) {
+      $out .= " ";
+    }
+    $out .= \ord($s[$i]);
+  }
+  return $out;
+}
+
+
 }
 // namespace Protobuf/Internal
 

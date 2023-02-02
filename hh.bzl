@@ -18,7 +18,7 @@ def _hh_test(ctx):
     return [DefaultInfo(executable = out, runfiles = runfiles)]
 
 hh_test = rule(
-    _hh_test,
+    implementation = _hh_test,
     attrs = {
         "srcs": attr.label_list(
             allow_files = True,
@@ -41,7 +41,7 @@ def _hh_client_test(ctx):
     return [DefaultInfo(executable = out, runfiles = runfiles)]
 
 hh_client_test = rule(
-    _hh_client_test,
+    implementation = _hh_client_test,
     attrs = {
         "srcs": attr.label_list(
             allow_files = True,
