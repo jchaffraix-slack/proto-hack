@@ -2,7 +2,7 @@ cmd_template = """\
 #!/bin/bash
 set -euo pipefail
 # ls -R
-/usr/bin/hhvm \
+hhvm \
     -d hhvm.repo.central.path=/tmp/proto-gen-hack.repo\
     {args} \
     "$@"
