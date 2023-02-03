@@ -47,9 +47,33 @@ function araw(string $got, string $exp, string $msg): void {
     echo sprintf("exp fn:%d wt:%d\n", $efn, $ewt);
     if ($gfn != $efn || $gwt != $ewt) {
       echo "^^ mismatch ^^\n";
+      $gdec->skip($gfn, $gwt);
+      $edec->skip($efn, $ewt);
+      continue;
     }
-    $gdec->skip($gfn, $gwt);
-    $edec->skip($efn, $ewt);
+    // Compare values.
+    switch ($gwt) {
+      case 0: // VARINT  int32, int64, uint32, uint64, sint32, sint64, bool, enum
+      case 1: // I64 fixed64, sfixed64, double
+      case 5: // I32 fixed32, sfixed32, float
+        $gint = $gdec->readVarint();
+        $eint = $edec->readVarint();
+        echo sprintf("readVarint: exp:%d wt:%d\n", $eint, $gint);
+        if ($gint != $eint) {
+          echo "^^ mismatch ^^\n";
+        }
+        break;
+      case 2: // LEN string, bytes, embedded messages, packed repeated fields
+        $glength = $gdec->readVarint();
+        $elength = $edec->readVarint();
+        echo sprintf("LEN length: exp:%d wt:%d\n", $elength, $glength);
+         break;
+      case 3: // SGROUP  group start (deprecated)
+      case 4: // EGROUP  group end (deprecated)
+      default:
+        echo sprintf("Unhandled type %d for %d\n", $gwt, $gfn);
+        break;
+    }
   }
   $tmpf = tempnam('', 'proto-test-got');
   $msg .= " writing to got to $tmpf";

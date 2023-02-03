@@ -32,6 +32,7 @@ function main(): void {
   echo "Starting with Marshal!!!\n\n";
   $remarsh = Protobuf\Marshal($got);
   araw($remarsh, $raw, "hack marshal does not match protoc marshal");
+
   $got = new foo\bar\example1();
   check(Protobuf\Unmarshal($remarsh, $got));
   testExample1($got, "test example1: remarshal");
