@@ -416,7 +416,7 @@ namespace Protobuf\Internal {
 
     public function writeEncoder(Encoder $e, int $fn): void {
       $this->writeTag($fn, 2);
-      $this->writeString($e->buf);
+      $this->writeString($e->buffer());
     }
 
     public function isEmpty(): bool {
