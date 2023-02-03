@@ -330,25 +330,11 @@ namespace Protobuf\Internal {
       }
     }
 
-    private function writeInt8(int $i): void {
+    private function writeByte(int $i): void {
       $this->growBufIfNeeded(1);
       \HH\set_bytes_int8($this->buf, $this->pos, $i);
       $this->pos += 1;
-      //echo "Called writeInt32 with {$i} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
-    }
-
-    private function writeFloat32(float $f): void {
-      $this->growBufIfNeeded(4);
-      \HH\set_bytes_float32($this->buf, $this->pos, $f);
-      $this->pos += 4;
-      //echo "Called writeFloat32 with {$f} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
-    }
-
-    private function writeFloat64(float $f): void {
-      $this->growBufIfNeeded(8);
-      \HH\set_bytes_float64($this->buf, $this->pos, $f);
-      $this->pos += 8;
-      //echo "Called writeFloat64 with {$f} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
+      //echo "Called writeByte with {$i} (new pos: {$this->pos}, buf = ". dumpByteString($this->buf, $this->pos). ")\n";
     }
 
     private function writeByteString(string $s): void {
@@ -362,7 +348,7 @@ namespace Protobuf\Internal {
     public function writeVarint(int $i): void {
       if ($i < 0) {
         // Special case: The sign bit is preserved while right shifting.
-        $this->writeInt32(($i & 0x7F) | 0x80);
+        $this->writeByte(($i & 0x7F) | 0x80);
         // Now shift and move sign bit.
         $i = (($i & 0x7FFFFFFFFFFFFFFF) >> 7) | 0x100000000000000;
       }
@@ -370,10 +356,10 @@ namespace Protobuf\Internal {
         $b = $i & 0x7F; // lower 7 bits
         $i = $i >> 7;
         if ($i == 0) {
-          $this->writeInt32($b);
+          $this->writeByte($b);
           return;
         }
-        $this->writeInt32(($b | 0x80)); // set the top bit.
+        $this->writeByte(($b | 0x80)); // set the top bit.
       }
     }
 
@@ -395,9 +381,9 @@ namespace Protobuf\Internal {
 
     public function writeBool(bool $b): void {
       if ($b) {
-        $this->writeInt32(1);
+        $this->writeByte(1);
       } else {
-        $this->writeInt32(0);
+        $this->writeByte(0);
       }
     }
 
